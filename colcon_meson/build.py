@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import shutil
 import json
+import argparse
 
 from mesonbuild import coredata
 from mesonbuild.mesonmain import CommandLineParser
@@ -48,9 +49,12 @@ class MesonBuildTask(TaskExtensionPoint):
         self.parser_setup = CommandLineParser().subparsers.choices["setup"]
 
     def add_arguments(self, *, parser):
-        parser.add_argument('--meson-args',
-            nargs='*', metavar='*', type=str.lstrip, default=list(),
-            help='Pass arguments to Meson projects.')
+        try:
+            parser.add_argument('--meson-args',
+                nargs='*', metavar='*', type=str.lstrip, default=list(),
+                help='Pass arguments to Meson projects.')
+        except argparse.ArgumentError as e:
+            print("err:", e)
 
     def get_default_args(self, args):
         margs = list()
