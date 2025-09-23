@@ -13,7 +13,7 @@ test_project_path = os.path.join(
 )
 
 
-def test_capital_case():
+def test_identification():
     mpi = MesonPackageIdentification()
     desc = PackageDescriptor(test_project_path)
     mpi.identify(desc)
