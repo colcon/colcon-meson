@@ -9,21 +9,20 @@ from colcon_core.logging import colcon_logger
 from colcon_core.package_descriptor import PackageDescriptor
 from colcon_core.package_identification import PackageIdentificationExtensionPoint
 # meson
-from mesonbuild import environment
 from mesonbuild import mesonlib
+from mesonbuild.ast import IntrospectionInterpreter
 from mesonbuild.interpreter import primitives
 from mesonbuild.interpreterbase.baseobjects import InterpreterObject, mparser
-from mesonbuild.interpreterbase.interpreterbase import InterpreterBase
 
 logger = colcon_logger.getChild(__name__)
 
 
-class CustomInterpreter(InterpreterBase):
+class CustomInterpreter(IntrospectionInterpreter):
     """A custom interpreter to parse metadata for Meson projects."""
 
-    def __init__(self, source_root: str, subdir: str, subproject: str):
+    def __init__(self, source_root: str, subdir: str, backend: str,):
         """Initialise the interpreter and a data structure for metadata."""
-        super().__init__(source_root, subdir, subproject)
+        super().__init__(source_root, subdir, backend)
 
         self.holder_map.update({
             list: primitives.ArrayHolder,
@@ -32,8 +31,6 @@ class CustomInterpreter(InterpreterBase):
             bool: primitives.BooleanHolder,
             str: primitives.StringHolder,
         })
-
-        self.environment = environment
 
         self.data = {}
         self.data["dependencies"] = set()

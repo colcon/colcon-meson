@@ -16,7 +16,9 @@ from colcon_core.task import run
 from colcon_core.task import TaskExtensionPoint
 # meson
 from mesonbuild import coredata
+from mesonbuild.build import OptionKey
 from mesonbuild.mesonmain import CommandLineParser
+
 
 logger = colcon_logger.getChild(__name__)
 
@@ -70,7 +72,18 @@ def format_args(args):
     Returns:
         dict: converted arguments as key-value pairs
     """
-    return {arg.name: args.cmd_line_options[arg] for arg in args.cmd_line_options}
+    cli_params = {}
+    for param in args.cmd_line_options:
+        v = args.cmd_line_options[param]
+        if isinstance(param, OptionKey):
+            # meson <= 1.7
+            cli_params[param.name] = v
+        elif isinstance(param, str):
+            # meson >= 1.8
+            cli_params[param] = v
+        else:
+            raise AttributeError(f'Unsupported CLI option key type {type(param).__name__}')
+    return cli_params
 
 
 class MesonBuildTask(TaskExtensionPoint):
