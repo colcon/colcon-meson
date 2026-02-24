@@ -2,11 +2,11 @@
 # Licensed under the Apache License, Version 2.0
 
 from argparse import ArgumentParser, Namespace
-from importlib.metadata import version
 import json
 import os
 from pathlib import Path
 import shutil
+import sys
 from typing import List
 
 # colcon
@@ -18,6 +18,12 @@ from colcon_core.task import TaskExtensionPoint
 # meson
 from mesonbuild.build import OptionKey
 from mesonbuild.mesonmain import CommandLineParser
+
+
+if sys.version_info >= (3, 8):
+    from importlib.metadata import version
+else:
+    from importlib_metadata import version
 
 if tuple(map(int, version("meson").split(".")[:3])) >= (1, 10, 0):
     from mesonbuild import cmdline as meson_cmd
