@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0
 
 from argparse import ArgumentParser, Namespace
+from importlib.metadata import version
 import json
 import os
 from pathlib import Path
@@ -15,9 +16,13 @@ from colcon_core.shell import get_command_environment
 from colcon_core.task import run
 from colcon_core.task import TaskExtensionPoint
 # meson
-from mesonbuild import coredata
 from mesonbuild.build import OptionKey
 from mesonbuild.mesonmain import CommandLineParser
+
+if tuple(map(int, version("meson").split(".")[:3])) >= (1, 10, 0):
+    from mesonbuild import cmdline as meson_cmd
+else:
+    from mesonbuild import coredata as meson_cmd
 
 
 logger = colcon_logger.getChild(__name__)
@@ -145,7 +150,7 @@ class MesonBuildTask(TaskExtensionPoint):
             Namespace: parse args
         """
         args = self.parser_setup.parse_args(cmdline)
-        coredata.parse_cmd_line_options(args)
+        meson_cmd.parse_cmd_line_options(args)
         return args
 
     def meson_format_cmdline(self, cmdline: List[str]):
@@ -169,7 +174,7 @@ class MesonBuildTask(TaskExtensionPoint):
             dict: converted key-value pairs
         """
         args = self.meson_parse_cmdline([])
-        coredata.read_cmd_line_file(builddir, args)
+        meson_cmd.read_cmd_line_file(builddir, args)
         return format_args(args)
 
     async def build(self, *, additional_hooks=None, skip_hook_creation=False,
