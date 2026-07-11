@@ -10,5 +10,6 @@ artifacts:
           distributions:
             - ubuntu:jammy
             - ubuntu:noble
+            - ubuntu:resolute
             - debian:bookworm
             - debian:trixie

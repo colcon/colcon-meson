@@ -105,7 +105,6 @@ class MesonBuildTask(TaskExtensionPoint):
         super().__init__()
 
         self.meson_path = shutil.which("meson")
-        self.parser_setup = CommandLineParser().subparsers.choices["setup"]
 
     def add_arguments(self, *, parser: ArgumentParser):
         """Add new arguments to the colcon build argument parser.
@@ -155,7 +154,8 @@ class MesonBuildTask(TaskExtensionPoint):
         Returns:
             Namespace: parse args
         """
-        args = self.parser_setup.parse_args(cmdline)
+        parser_setup = CommandLineParser().subparsers.choices["setup"]
+        args = parser_setup.parse_args(cmdline)
         meson_cmd.parse_cmd_line_options(args)
         return args
 
