@@ -97,6 +97,75 @@ def format_args(args):
     return cli_params
 
 
+def get_default_args(args: Namespace) -> List[str]:
+    """Get default Meson arguments.
+
+    Args:
+        args (Namespace): parse arguments from an ArgumentParser
+
+    Returns:
+        list: list of command line arguments for meson
+    """
+    margs = []
+
+    # meson installs by default to architecture specific subdirectories,
+    # e.g. "lib/x86_64-linux-gnu", but the LibraryPathEnvironment hook
+    # only searches within the fist lib level
+    margs += ["--libdir=lib"]
+
+    margs += ["--prefix=" + args.install_base]
+
+    # build in release mode by default
+    margs += ["--buildtype=release"]
+
+    # positional arguments for 'builddir' and 'sourcedir'
+    margs += [args.build_base]
+    margs += [args.path]
+
+    return margs
+
+
+def meson_parse_cmdline(cmdline: List[str]) -> Namespace:
+    """Parse command line arguments with the Meson arg parser.
+
+    Args:
+        cmdline (list): command line arguments
+
+    Returns:
+        Namespace: parse args
+    """
+    parser_setup = CommandLineParser().subparsers.choices["setup"]
+    args = parser_setup.parse_args(cmdline)
+    meson_cmd.parse_cmd_line_options(args)
+    return args
+
+
+def meson_format_cmdline(cmdline: List[str]):
+    """Convert Meson args from command line.
+
+    Args:
+        cmdline (list): command line arguments
+
+    Returns:
+        dict: converted key-value pairs
+    """
+    return format_args(meson_parse_cmdline(cmdline))
+
+
+def meson_format_cmdline_file(builddir: str):
+    """Convert Meson args from command line arguments stored in the build directory.
+
+    Args:
+        builddir (str): path to the build directory
+
+    Returns:
+        dict: converted key-value pairs
+    """
+    args = meson_parse_cmdline([])
+    meson_cmd.read_cmd_line_file(builddir, args)
+    return format_args(args)
+
+
 class MesonBuildTask(TaskExtensionPoint):
     """Task to build a Meson project."""
 
@@ -117,71 +186,6 @@ class MesonBuildTask(TaskExtensionPoint):
                             type=str.lstrip, default=[],
                             help="Pass 'setup' arguments to Meson projects.",
                             )
-
-    def get_default_args(self, args: Namespace) -> List[str]:
-        """Get default Meson arguments.
-
-        Args:
-            args (Namespace): parse arguments from an ArgumentParser
-
-        Returns:
-            list: list of command line arguments for meson
-        """
-        margs = []
-
-        # meson installs by default to architecture specific subdirectories,
-        # e.g. "lib/x86_64-linux-gnu", but the LibraryPathEnvironment hook
-        # only searches within the fist lib level
-        margs += ["--libdir=lib"]
-
-        margs += ["--prefix=" + args.install_base]
-
-        # build in release mode by default
-        margs += ["--buildtype=release"]
-
-        # positional arguments for 'builddir' and 'sourcedir'
-        margs += [args.build_base]
-        margs += [args.path]
-
-        return margs
-
-    def meson_parse_cmdline(self, cmdline: List[str]) -> Namespace:
-        """Parse command line arguments with the Meson arg parser.
-
-        Args:
-            cmdline (list): command line arguments
-
-        Returns:
-            Namespace: parse args
-        """
-        parser_setup = CommandLineParser().subparsers.choices["setup"]
-        args = parser_setup.parse_args(cmdline)
-        meson_cmd.parse_cmd_line_options(args)
-        return args
-
-    def meson_format_cmdline(self, cmdline: List[str]):
-        """Convert Meson args from command line.
-
-        Args:
-            cmdline (list): command line arguments
-
-        Returns:
-            dict: converted key-value pairs
-        """
-        return format_args(self.meson_parse_cmdline(cmdline))
-
-    def meson_format_cmdline_file(self, builddir: str):
-        """Convert Meson args from command line arguments stored in the build directory.
-
-        Args:
-            builddir (str): path to the build directory
-
-        Returns:
-            dict: converted key-value pairs
-        """
-        args = self.meson_parse_cmdline([])
-        meson_cmd.read_cmd_line_file(builddir, args)
-        return format_args(args)
 
     async def build(self, *, additional_hooks=None, skip_hook_creation=False,
                     environment_callback=None, additional_targets=None):
@@ -220,9 +224,9 @@ class MesonBuildTask(TaskExtensionPoint):
         self.progress('meson')
 
         # set default arguments
-        marg_def = self.get_default_args(args)
+        marg_def = get_default_args(args)
         # parse default arguments as dict
-        defcfg = self.meson_format_cmdline(marg_def)
+        defcfg = meson_format_cmdline(marg_def)
 
         buildfile = Path(args.build_base) / "build.ninja"
         configfile = Path(args.build_base) / "meson-info" / "intro-buildoptions.json"
@@ -232,8 +236,8 @@ class MesonBuildTask(TaskExtensionPoint):
         config_changed = False
 
         if not run_init_setup:
-            newcfg = self.meson_format_cmdline(args.meson_args)
-            oldcfg = self.meson_format_cmdline_file(args.build_base)
+            newcfg = meson_format_cmdline(args.meson_args)
+            oldcfg = meson_format_cmdline_file(args.build_base)
             # remove default arguments
             for arg in oldcfg.keys() & defcfg.keys():
                 if oldcfg[arg] == defcfg[arg]:
