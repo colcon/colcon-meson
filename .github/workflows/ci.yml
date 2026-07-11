@@ -94,5 +94,10 @@ jobs:
       - name: build
         working-directory: test/meson_test_project
         run: |
-          colcon build
+          colcon build --event-handlers=console_direct+
           test -f install/meson_test_project/bin/meson_test_project
+
+      - name: reconfigure (buildtype=debug)
+        working-directory: test/meson_test_project
+        run: |
+          colcon build --event-handlers=console_direct+ --meson-args "--buildtype=debug"
